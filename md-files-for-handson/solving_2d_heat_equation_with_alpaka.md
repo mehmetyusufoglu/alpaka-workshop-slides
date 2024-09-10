@@ -15,7 +15,7 @@ We will discretize the equation using a forward difference in time and central d
 
 We begin by defining our grid size, time steps, and other parameters. In this setup, the grid will have `NX` points in the x-direction and `NY` points in the y-direction. 
 
-\`\`\`cpp
+```cpp
 const int NX = 64;
 const int NY = 64;
 const double alpha = 0.01;  // Diffusivity constant
@@ -23,7 +23,7 @@ const double dx = 1.0 / (NX - 1);  // Grid spacing in x
 const double dy = 1.0 / (NY - 1);  // Grid spacing in y
 const double dt = 0.01;     // Time step
 const int num_steps = 1000; // Number of time steps
-\`\`\`
+```
 
 We also define arrays for storing the current and next temperature distributions.
 
@@ -31,7 +31,7 @@ We also define arrays for storing the current and next temperature distributions
 
 First, we select a HIP accelerator as Alpaka supports multiple backends. In this case, we use \`alpaka::AccGpuHipRt\` to choose a HIP GPU for acceleration.
 
-\`\`\`cpp
+```cpp
 using Dim = alpaka::DimInt<2>;  // 2D problem
 using Idx = std::size_t;  // Use size_t for indexing
 
@@ -40,7 +40,7 @@ using Acc = alpaka::AccGpuHipRt<Dim, Idx>;
 auto const devAcc = alpaka::getDevByIdx<Acc>(0u);  // Select HIP device
 using Queue = alpaka::Queue<Acc, alpaka::NonBlocking>;
 Queue queue(devAcc);
-\`\`\`
+```
 
 This step ensures that the computation is executed on a HIP-enabled GPU.
 
@@ -48,7 +48,7 @@ This step ensures that the computation is executed on a HIP-enabled GPU.
 
 The core of the solution involves applying the finite difference scheme to the grid points. In Alpaka, we define a kernel to execute this operation in parallel across the grid.
 
-\`\`\`cpp
+```cpp
 class HeatEquationKernel
 {
 public:
@@ -71,7 +71,7 @@ public:
         }
     }
 };
-\`\`\`
+```
 
 In the kernel, we compute the second derivatives using central difference approximations and update the temperature for each grid point.
 
@@ -79,19 +79,19 @@ In the kernel, we compute the second derivatives using central difference approx
 
 In Alpaka, we need to allocate memory on the device and copy data between the host (CPU) and the device (GPU/CPU). We use \`alpaka::allocBuf\` to allocate buffers for \`uCurr\` and \`uNext\`, which store the temperature at the current and next time steps.
 
-\`\`\`cpp
+```cpp
 auto uCurrBuf = alpaka::allocBuf<double, Idx>(devAcc, alpaka::Vec<Dim, Idx>{NX * NY});
 auto uNextBuf = alpaka::allocBuf<double, Idx>(devAcc, alpaka::Vec<Dim, Idx>{NX * NY});
 
 // Copy initial conditions from host to device
 alpaka::memcpy(queue, uCurrBuf, uHost);
-\`\`\`
+```
 
 ### Step 5: Work Division (Updated)
 
 The work division is set similar to the template example, which splits the problem into chunks and defines the thread and block sizes.
 
-\`\`\`cpp
+```cpp
 constexpr alpaka::Vec<Dim, Idx> elemPerThread{1, 1};
 constexpr Idx xSize = 16u;
 constexpr Idx ySize = 16u;
@@ -109,13 +109,13 @@ alpaka::WorkDivMembers<Dim, Idx> workDiv{
     chunkSize,
     elemPerThread
 };
-\`\`\`
+```
 
 ### Step 6: Executing the Kernel
 
 Now we can execute the kernel for a specified number of time steps. After each step, we swap the buffers (\`uCurr\` and \`uNext\`) to update the grid for the next iteration.
 
-\`\`\`cpp
+```cpp
 for (int step = 0; step < num_steps; ++step)
 {
     // Execute the kernel
@@ -132,18 +132,18 @@ for (int step = 0; step < num_steps; ++step)
     // Swap buffers for the next iteration
     std::swap(uCurrBuf, uNextBuf);
 }
-\`\`\`
+```
 
 ### Step 7: Copy Result Back to Host
 
 After all time steps have been completed, the final temperature distribution is copied back to the host for visualization or further processing.
 
-\`\`\`cpp
+```cpp
 alpaka::memcpy(queue, uHost, uCurrBuf);
 alpaka::wait(queue);
 
 // Print the result or save it to a file
-\`\`\`
+```
 
 ### Conclusion
 

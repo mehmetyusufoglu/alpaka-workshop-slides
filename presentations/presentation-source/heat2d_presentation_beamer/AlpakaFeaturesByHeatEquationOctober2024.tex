@@ -77,14 +77,14 @@
 % Overlay two logos using TikZ
 \setbeamertemplate{background}{%
     \begin{tikzpicture}[remember picture,overlay]
-        % Only show the Alpaka logo if it is NOT the title page
-        \ifx\inserttitlepage\relax
+        % Only show the Alpaka logo if it's NOT the title page
+        \ifnum\insertframenumber>1
             % Top right logo (logoAlpaka) with vertical adjustment
-            \node[anchor=north east] at ([yshift=-1.5cm,xshift=+0.1cm]current page.north east) {\includegraphics[width=2cm]{logoAlpaka.png}};
+            \node[anchor=north east] at ([yshift=-1.63cm,xshift=+0.1cm]current page.north east) {\includegraphics[width=2cm]{logoAlpaka.png}};
         \fi
 
         % Bottom left logo (logoCasus) appears on all slides
-        \node[anchor=south west] at (current page.south west) {\includegraphics[width=2.1cm]{logoCasus.png}};
+        \node[anchor=south west] at (current page.south west) {\includegraphics[width=2.3cm]{logoCasus.png}};
     \end{tikzpicture}
 }
 
